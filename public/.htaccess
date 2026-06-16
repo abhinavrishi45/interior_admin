@@ -1,0 +1,16 @@
+Options -MultiViews
+RewriteEngine On
+
+# Handle Next.js static files directly
+RewriteCond %{REQUEST_URI} ^/_next/static/
+RewriteRule ^ - [L]
+
+# Handle public folder static files
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Proxy all other requests to the Node.js server (Passenger)
+PassengerEnabled on
+PassengerApp /home/YOUR_CPANEL_USERNAME/YOUR_APP_FOLDER
+PassengerNodejs /usr/local/bin/node
+PassengerStartupFile server.js
