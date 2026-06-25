@@ -15,7 +15,7 @@ const navItems = [
   // { name: "Design Team", href: "/design-team", icon: Users },
   // { name: "Studio Operations", href: "/studio-operations", icon: Users },
   // { name: "Studio Values", href: "/studio-values", icon: Award },
-  { name: "Services", href: "/services", icon: Briefcase },
+  // { name: "Services", href: "/services", icon: Briefcase },
   { name: "Blog", href: "/blog", icon: ImageIcon },
   { name: "Contact Page", href: "/contact", icon: Phone },
   { name: "Enquiries", href: "/enquiries", icon: Phone },

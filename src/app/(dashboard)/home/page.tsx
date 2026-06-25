@@ -11,10 +11,41 @@ export default function HomeAdminPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('hero');
 
+  const defaultHomeData = {
+    hero: { eyebrow: '', heroImage: '', title: '', subtitle: '', stats: [] },
+    philosophy: { sectionLabel: '', heading: '', text1: '', text2: '', quote: '', image1: '', image2: '' },
+    services: { sectionLabel: '', heading: '', items: [] },
+    collection: { sectionLabel: '', heading: '', copy: '', items: [] },
+    parallax: { tag: '', title: '', desc: '', stats: [] },
+    process: { sectionLabel: '', heading: '', steps: [] },
+    testimonials: { sectionLabel: '', heading: '', featured: { text: '', authorName: '', authorRole: '', authorImg: '' }, side: [] },
+    cta: { eyebrow: '', title: '', text: '', primaryBtnText: '', secondaryBtnText: '' },
+  };
+
+  const normalizeHomeData = (incoming: any) => ({
+    ...defaultHomeData,
+    ...incoming,
+    hero: { ...defaultHomeData.hero, ...incoming?.hero, stats: Array.isArray(incoming?.hero?.stats) ? incoming.hero.stats : defaultHomeData.hero.stats },
+    philosophy: { ...defaultHomeData.philosophy, ...incoming?.philosophy },
+    services: { ...defaultHomeData.services, ...incoming?.services, items: Array.isArray(incoming?.services?.items) ? incoming.services.items : defaultHomeData.services.items },
+    collection: { ...defaultHomeData.collection, ...incoming?.collection, items: Array.isArray(incoming?.collection?.items) ? incoming.collection.items : defaultHomeData.collection.items },
+    parallax: { ...defaultHomeData.parallax, ...incoming?.parallax, stats: Array.isArray(incoming?.parallax?.stats) ? incoming.parallax.stats : defaultHomeData.parallax.stats },
+    process: { ...defaultHomeData.process, ...incoming?.process, steps: Array.isArray(incoming?.process?.steps) ? incoming.process.steps : defaultHomeData.process.steps },
+    testimonials: {
+      ...defaultHomeData.testimonials,
+      ...incoming?.testimonials,
+      featured: { ...defaultHomeData.testimonials.featured, ...incoming?.testimonials?.featured },
+      side: Array.isArray(incoming?.testimonials?.side) ? incoming.testimonials.side : defaultHomeData.testimonials.side,
+    },
+    cta: { ...defaultHomeData.cta, ...incoming?.cta },
+  });
+
+  const arrayOrEmpty = (value: any) => Array.isArray(value) ? value : [];
+
   useEffect(() => {
     fetch("https://backendinterior.tannis.in/api/home")
       .then(res => res.json())
-      .then(d => { setData(d); setLoading(false); })
+      .then(d => { setData(normalizeHomeData(d)); setLoading(false); })
       .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
@@ -109,7 +140,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Hero Stats</h3>
               <div className="space-y-3">
-                {data.hero.stats.map((s: any, i: number) => (
+                {arrayOrEmpty(data.hero.stats).map((s: any, i: number) => (
                   <div key={i} className="flex gap-3 items-center">
                     <input type="text" placeholder="Value (e.g. 12+)" value={s.num} onChange={e => {
                       const newStats = [...data.hero.stats]; newStats[i].num = e.target.value; updateSection('hero', 'stats', newStats);
@@ -188,7 +219,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Service Items</h3>
               <div className="space-y-4">
-                {data.services.items.map((s: any, i: number) => (
+                {arrayOrEmpty(data.services.items).map((s: any, i: number) => (
                   <div key={i} className="p-4 border rounded-md space-y-3 relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-red-500" onClick={() => {
                       const newItems = data.services.items.filter((_: any, idx: number) => idx !== i); updateSection('services', 'items', newItems);
@@ -243,7 +274,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Collection Items</h3>
               <div className="grid grid-cols-2 gap-4">
-                {data.collection.items.map((s: any, i: number) => (
+                {arrayOrEmpty(data.collection.items).map((s: any, i: number) => (
                   <div key={i} className="flex gap-2 items-center p-3 border rounded-md">
                     <div className="flex-1 space-y-2">
                       <input type="text" placeholder="Title" value={s.title} onChange={e => {
@@ -320,7 +351,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Parallax Stats</h3>
               <div className="space-y-3">
-                {data.parallax.stats.map((s: any, i: number) => (
+                {arrayOrEmpty(data.parallax.stats).map((s: any, i: number) => (
                   <div key={i} className="flex gap-3 items-center">
                     <input type="text" placeholder="Value" value={s.num} onChange={e => {
                       const newStats = [...data.parallax.stats]; newStats[i].num = e.target.value; updateSection('parallax', 'stats', newStats);
@@ -360,7 +391,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Process Steps</h3>
               <div className="space-y-4">
-                {data.process.steps.map((s: any, i: number) => (
+                {arrayOrEmpty(data.process.steps).map((s: any, i: number) => (
                   <div key={i} className="p-4 border rounded-md space-y-3 relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-red-500" onClick={() => {
                       const newItems = data.process.steps.filter((_: any, idx: number) => idx !== i); updateSection('process', 'steps', newItems);
@@ -426,7 +457,7 @@ export default function HomeAdminPage() {
             <div className="pt-4 border-t mt-4">
               <h3 className="font-medium mb-3">Side Testimonials</h3>
               <div className="space-y-3">
-                {data.testimonials.side.map((s: any, i: number) => (
+                {arrayOrEmpty(data.testimonials.side).map((s: any, i: number) => (
                   <div key={i} className="flex gap-3 items-start border p-3 rounded-md relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-red-500" onClick={() => {
                       const newItems = data.testimonials.side.filter((_: any, idx: number) => idx !== i); updateSection('testimonials', 'side', newItems);

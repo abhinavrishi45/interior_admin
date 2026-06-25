@@ -5,7 +5,16 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Plus, Trash2, Eye, EyeOff, Loader2, Save } from "lucide-react";
 
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "https://backendinterior.tannis.in";
+
+const emptyData = {
+  hero: { title: '', subtitle: '', backgroundImage: '' },
+  stats: [],
+  values: [],
+  principals: [],
+  servicesList: [],
+  cta: { heading: '', subheading: '', buttonText: '', buttonLink: '' },
+};
 
 const defaultData = {
   hero: {
@@ -15,7 +24,7 @@ const defaultData = {
     backgroundImage:
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1400&q=80",
   },
-  stats: [
+  stats: [ 
     { value: "340+", label: "Projects completed", suffix: "" },
     { value: "18", label: "Design awards", suffix: "" },
     { value: "12", label: "Years of craft", suffix: "" },
@@ -68,25 +77,25 @@ const defaultData = {
   ],
   servicesList: [
     {
-      name: "Concept & space planning",
+      title: "Concept & space planning",
       description:
         "We develop defining schemes that honor each client's story and the architecture of the space.",
       icon: "",
     },
     {
-      name: "Interior styling & sourcing",
+      title: "Interior styling & sourcing",
       description:
         "We curate furniture, lighting, finishes and art for a cohesive, luxurious experience.",
       icon: "",
     },
     {
-      name: "Custom furniture & detailing",
+      title: "Custom furniture & detailing",
       description:
         "Our team designs custom joinery and furniture pieces to elevate every room.",
       icon: "",
     },
     {
-      name: "Project delivery",
+      title: "Project delivery",
       description:
         "We manage procurement, logistics and installation so every detail is executed precisely.",
       icon: "",
@@ -101,11 +110,39 @@ const defaultData = {
   },
 };
 
+const safeArray = (value: any) => (Array.isArray(value) ? value : []);
+
+const normalizeAboutData = (incoming: any) => ({
+  ...emptyData,
+  ...incoming,
+  hero: { ...(incoming?.hero || emptyData.hero) },
+  stats: safeArray(incoming?.stats),
+  values: safeArray(incoming?.values).map((item: any) => ({
+    ...item,
+    title: item.title || item.name || '',
+    description: item.description || item.desc || '',
+  })),
+  principals: safeArray(incoming?.principals),
+  servicesList: safeArray(incoming?.servicesList).map((item: any) => ({
+    ...item,
+    title: item.title || item.name || '',
+    description: item.description || item.desc || '',
+  })),
+  cta: {
+    ...emptyData.cta,
+    ...(incoming?.cta || {}),
+    heading: incoming?.cta?.heading || incoming?.cta?.title || '',
+    subheading: incoming?.cta?.subheading || incoming?.cta?.subtitle || '',
+    buttonText: incoming?.cta?.buttonText || incoming?.cta?.text || '',
+    buttonLink: incoming?.cta?.buttonLink || incoming?.cta?.link || '',
+  },
+});
+
 export default function AboutPage() {
-  const [data, setData] = useState<any>(defaultData);
+  const [data, setData] = useState<any>(emptyData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | false>(false);
   const [preview, setPreview] = useState(false);
   const [heroReady, setHeroReady] = useState(false);
 
@@ -114,20 +151,26 @@ export default function AboutPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/data/singleton/about`)
+  const load = () => {
+    setLoading(true);
+    setError(false);
+    fetch(`${API_BASE}/api/about`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load About content");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((json) => {
-        setData({ ...defaultData, ...json });
+        setData(normalizeAboutData(json || {}));
       })
       .catch((err) => {
         console.error("Failed to load about content:", err);
-        setError(true);
+        setError(err?.message || String(err));
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const readFileAsBase64 = (file: File): Promise<string> =>
@@ -159,18 +202,21 @@ export default function AboutPage() {
   };
 
   const updateArrayItem = (section: string, index: number, field: string, value: string) => {
-    setData((current: any) => ({
-      ...current,
-      [section]: current[section].map((item: any, idx: number) =>
-        idx === index ? { ...item, [field]: value } : item
-      ),
-    }));
+    setData((current: any) => {
+      const sectionArray = Array.isArray(current[section]) ? current[section] : [];
+      return {
+        ...current,
+        [section]: sectionArray.map((item: any, idx: number) =>
+          idx === index ? { ...item, [field]: value } : item
+        ),
+      };
+    });
   };
 
   const addArrayItem = (section: string, item: any) => {
     setData((current: any) => ({
       ...current,
-      [section]: [...(current[section] || []), item],
+      [section]: [...(Array.isArray(current[section]) ? current[section] : []), item],
     }));
   };
 
@@ -183,7 +229,7 @@ export default function AboutPage() {
   const removeArrayItem = (section: string, index: number) => {
     setData((current: any) => ({
       ...current,
-      [section]: current[section].filter((_: any, idx: number) => idx !== index),
+      [section]: (Array.isArray(current[section]) ? current[section] : []).filter((_: any, idx: number) => idx !== index),
     }));
   };
 
@@ -191,15 +237,20 @@ export default function AboutPage() {
     event.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/api/data/singleton/about`, {
+      const res = await fetch(`${API_BASE}/api/about`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+      }
+      await load();
       alert("About page content saved successfully.");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err?.message || String(err));
       alert("Unable to save. Check the backend and try again.");
     } finally {
       setSaving(false);
@@ -218,17 +269,18 @@ export default function AboutPage() {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-red-700">
         <h2 className="text-2xl font-semibold mb-2">Unable to load About content</h2>
-        <p>Please confirm the backend server is running at {API_BASE} and retry.</p>
+        <p>Please confirm the backend is accessible and retry.</p>
+        {error && <pre className="mt-2 text-xs text-red-800">{error}</pre>}
       </div>
     );
   }
 
-  const hero = data.hero || defaultData.hero;
-  const stats = data.stats && data.stats.length ? data.stats : defaultData.stats;
-  const values = data.values && data.values.length ? data.values : defaultData.values;
-  const principals = data.principals && data.principals.length ? data.principals : defaultData.principals;
-  const services = data.servicesList && data.servicesList.length ? data.servicesList : defaultData.servicesList;
-  const cta = data.cta || defaultData.cta;
+  const hero = data.hero || emptyData.hero;
+  const stats = safeArray(data.stats);
+  const values = safeArray(data.values);
+  const principals = safeArray(data.principals);
+  const services = safeArray(data.servicesList);
+  const cta = data.cta || emptyData.cta;
 
   return (
     <div className="space-y-8 py-8">
@@ -455,10 +507,10 @@ export default function AboutPage() {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Name</label>
+                    <label className="text-sm font-medium">Title</label>
                     <input
-                      value={item.name}
-                      onChange={(e) => updateArrayItem("servicesList", index, "name", e.target.value)}
+                      value={item.title}
+                      onChange={(e) => updateArrayItem("servicesList", index, "title", e.target.value)}
                       className="w-full rounded-md border border-input px-3 py-2 text-sm"
                     />
                     <label className="text-sm font-medium">Description</label>
@@ -470,7 +522,7 @@ export default function AboutPage() {
                   </div>
                 </div>
               ))}
-              <Button variant="secondary" onClick={() => addArrayItem("servicesList", { name: "", description: "", icon: "" })}>
+              <Button variant="secondary" onClick={() => addArrayItem("servicesList", { title: "", description: "", icon: "" })}>
                 <Plus className="mr-2 w-4 h-4" /> Add Service
               </Button>
             </CardContent>
