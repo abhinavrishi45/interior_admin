@@ -12,7 +12,7 @@ export default function BlogPage() {
           { name: "excerpt", label: "Excerpt", type: "textarea" },
           { name: "content", label: "Content", type: "textarea" },
           { name: "author", label: "Author", type: "text" },
-          { name: "image", label: "Image URL", type: "text" },
+          { name: "image", label: "Image", type: "image" },
         ]}
       />
     </div>

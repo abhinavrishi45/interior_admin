@@ -24,7 +24,7 @@ const defaultData = {
     backgroundImage:
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1400&q=80",
   },
-  stats: [ 
+  stats: [
     { value: "340+", label: "Projects completed", suffix: "" },
     { value: "18", label: "Design awards", suffix: "" },
     { value: "12", label: "Years of craft", suffix: "" },
